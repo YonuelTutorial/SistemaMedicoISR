@@ -1,0 +1,229 @@
+/* ============================================================================
+   SistemaMedico.sql
+   Sistema Médico - Diagnóstico por Síntomas
+   INF-450-002 Ingeniería de Software II
+   --------------------------------------------------------------------------
+   ============================================================================ */
+-- DROP DATABASE IF EXISTS SistemaMedico;
+CREATE DATABASE IF NOT EXISTS SistemaMedico CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE SistemaMedico;
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ================================
+-- CATÁLOGOS BÁSICOS
+-- ================================
+
+CREATE TABLE sexo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE rol_usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE unidad_medida (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    simbolo VARCHAR(10)
+);
+
+CREATE TABLE escala_severidad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    valor_orden INT NOT NULL
+);
+
+CREATE TABLE tipo_valor_sintoma (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+--------------------------------------------------------------------------------
+-- USUARIOS Y MÉDICOS
+--------------------------------------------------------------------------------
+CREATE TABLE usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    correo VARCHAR(100),
+    clave_hash VARCHAR(255),
+    rol_id INT,
+    activo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (rol_id) REFERENCES rol_usuario(id)
+);
+
+CREATE TABLE medico (
+    id INT PRIMARY KEY,
+    especialidad VARCHAR(100),
+    numero_colegiado VARCHAR(50),
+    FOREIGN KEY (id) REFERENCES usuario(id)
+);
+--------------------------------------------------------------------------------
+-- PACIENTES
+--------------------------------------------------------------------------------
+CREATE TABLE paciente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    sexo_id INT,
+    fecha_nacimiento DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (sexo_id) REFERENCES sexo(id)
+);
+--------------------------------------------------------------------------------
+-- CONSULTAS
+--------------------------------------------------------------------------------
+CREATE TABLE consulta (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    paciente_id INT,
+    fecha DATETIME,
+    motivo TEXT,
+    medico_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (paciente_id) REFERENCES paciente(id),
+    FOREIGN KEY (medico_id) REFERENCES medico(id)
+);
+--------------------------------------------------------------------------------
+-- CATÁLOGO DE SÍNTOMAS
+--------------------------------------------------------------------------------
+CREATE TABLE sintoma_catalogo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    descripcion TEXT,
+    tipo_valor_id INT,
+    unidad_id INT,
+    escala_id INT,
+    FOREIGN KEY (tipo_valor_id) REFERENCES tipo_valor_sintoma(id),
+    FOREIGN KEY (unidad_id) REFERENCES unidad_medida(id),
+    FOREIGN KEY (escala_id) REFERENCES escala_severidad(id)
+);
+--------------------------------------------------------------------------------
+-- CATÁLOGO DE ENFERMEDADES
+--------------------------------------------------------------------------------
+CREATE TABLE enfermedad_catalogo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    descripcion TEXT
+);
+--------------------------------------------------------------------------------
+-- SÍNTOMAS OBSERVADOS
+--------------------------------------------------------------------------------
+CREATE TABLE sintoma_observado (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    consulta_id INT,
+    sintoma_id INT,
+    valor_num DECIMAL(6,2),
+    unidad_id INT,
+    severidad_id INT,
+    valor_texto TEXT,
+    frecuencia INT,
+    cantidad DECIMAL(6,2),
+    secuencia INT,
+    observacion_ts DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (consulta_id) REFERENCES consulta(id),
+    FOREIGN KEY (sintoma_id) REFERENCES sintoma_catalogo(id),
+    FOREIGN KEY (unidad_id) REFERENCES unidad_medida(id),
+    FOREIGN KEY (severidad_id) REFERENCES escala_severidad(id)
+);
+--------------------------------------------------------------------------------
+-- REGLAS CLÍNICAS (ENFERMEDAD-SÍNTOMA)
+--------------------------------------------------------------------------------
+CREATE TABLE enfermedad_regla_sintoma (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    enfermedad_id INT,
+    sintoma_id INT,
+    peso DECIMAL(5,2),
+    nivel_min DECIMAL(6,2),
+    nivel_max DECIMAL(6,2),
+    severidad_min_id INT,
+    severidad_max_id INT,
+    frecuente BOOLEAN,
+    secuencia_min INT,
+    secuencia_max INT,
+    vigente_desde DATE,
+    vigente_hasta DATE,
+    creado_por INT,
+    FOREIGN KEY (enfermedad_id) REFERENCES enfermedad_catalogo(id),
+    FOREIGN KEY (sintoma_id) REFERENCES sintoma_catalogo(id),
+    FOREIGN KEY (severidad_min_id) REFERENCES escala_severidad(id),
+    FOREIGN KEY (severidad_max_id) REFERENCES escala_severidad(id),
+    FOREIGN KEY (creado_por) REFERENCES usuario(id)
+);
+--------------------------------------------------------------------------------
+-- HISTORIAL DE REGLAS
+--------------------------------------------------------------------------------
+CREATE TABLE enfermedad_regla_sintoma_hist LIKE enfermedad_regla_sintoma;
+--------------------------------------------------------------------------------
+-- DIAGNÓSTICO SUGERIDO
+--------------------------------------------------------------------------------
+CREATE TABLE diagnostico_sugerido (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    consulta_id INT,
+    fecha DATETIME,
+    version_algoritmo VARCHAR(50),
+    parametros JSON,
+    total_enfermedades INT,
+    FOREIGN KEY (consulta_id) REFERENCES consulta(id)
+);
+
+CREATE TABLE diagnostico_sugerido_item (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sugerido_id INT,
+    enfermedad_id INT,
+    puntaje DECIMAL(6,2),
+    coincidencias INT,
+    detalles JSON,
+    FOREIGN KEY (sugerido_id) REFERENCES diagnostico_sugerido(id),
+    FOREIGN KEY (enfermedad_id) REFERENCES enfermedad_catalogo(id)
+);
+--------------------------------------------------------------------------------
+-- DIAGNÓSTICO CONFIRMADO
+--------------------------------------------------------------------------------
+CREATE TABLE diagnostico (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    consulta_id INT,
+    enfermedad_id INT,
+    observaciones TEXT,
+    sugerido_por_sistema BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (consulta_id) REFERENCES consulta(id),
+    FOREIGN KEY (enfermedad_id) REFERENCES enfermedad_catalogo(id)
+);
+--------------------------------------------------------------------------------
+-- EVALUACIÓN DE DIAGNÓSTICO
+--------------------------------------------------------------------------------
+CREATE TABLE evaluacion_diagnostico (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    diagnostico_id INT,
+    fue_correcto BOOLEAN,
+    comentario TEXT,
+    fecha_evaluacion DATE,
+    FOREIGN KEY (diagnostico_id) REFERENCES diagnostico(id)
+);
+--------------------------------------------------------------------------------
+-- CONFIGURACIÓN GLOBAL Y AUDITORÍA
+--------------------------------------------------------------------------------
+CREATE TABLE configuracion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    clave VARCHAR(100),
+    valor TEXT,
+    descripcion TEXT,
+    vigente_desde DATE,
+    vigente_hasta DATE,
+    modificado_por INT,
+    FOREIGN KEY (modificado_por) REFERENCES usuario(id)
+);
+
+CREATE TABLE configuracion_hist LIKE configuracion;
+
+
+--------------------------------------------------------------------------------
+SET FOREIGN_KEY_CHECKS = 1;

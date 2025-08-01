@@ -1,0 +1,174 @@
+/* ============================================================================
+
+   ============================================================================ */
+USE medsys;
+DELIMITER $$
+
+/* ---------------------------------------------------------
+   SP: sp_sugerir_enfermedades
+   Genera puntajes por enfermedad según los síntomas registrados
+   en una consulta, evaluando reglas vigentes.
+   Lógica simplificada educativa:
+     score_enf = (SUM(peso * factor_match) / SUM(peso)) * 100
+     factor_match = 1 si el síntoma cumple criterios (nivel, severidad, secuencia, etc.)
+                    0 si no
+   Devuelve recordset + crea registro en diagnostico_sugerido / items.
+--------------------------------------------------------- */
+DROP PROCEDURE IF EXISTS sp_sugerir_enfermedades$$
+CREATE PROCEDURE sp_sugerir_enfermedades(IN p_consulta_id INT)
+BEGIN
+  DECLARE v_diag_sug_id INT;
+
+  /* Crear cabecera */
+  INSERT INTO diagnostico_sugerido (consulta_id, algoritmo_version)
+  VALUES (p_consulta_id, 'v1');
+  SET v_diag_sug_id = LAST_INSERT_ID();
+
+  /* Insertar items calculados (simplificación) */
+  INSERT INTO diagnostico_sugerido_item
+    (diagnostico_sugerido_id, enfermedad_id, score, coincidencias, detalles_json)
+  SELECT
+      v_diag_sug_id AS diagnostico_sugerido_id,
+      ers.enfermedad_id,
+      /* score calculado: porcentaje de pesos cumplidos */
+      ROUND(
+        (SUM(
+           CASE
+             WHEN (ers.nivel_min IS NULL OR (so.valor_num IS NOT NULL AND so.valor_num >= ers.nivel_min))
+              AND (ers.nivel_max IS NULL OR (so.valor_num IS NOT NULL AND so.valor_num <= ers.nivel_max))
+              AND (ers.severidad_min_id IS NULL OR so.severidad_id >= ers.severidad_min_id)
+              AND (ers.secuencia_min IS NULL OR so.secuencia >= ers.secuencia_min)
+              AND (ers.secuencia_max IS NULL OR so.secuencia <= ers.secuencia_max)
+              THEN ers.peso
+             ELSE 0
+           END
+        ) / NULLIF(SUM(ers.peso),0)) * 100,2) AS score,
+      SUM(
+           CASE
+             WHEN (ers.nivel_min IS NULL OR (so.valor_num IS NOT NULL AND so.valor_num >= ers.nivel_min))
+              AND (ers.nivel_max IS NULL OR (so.valor_num IS NOT NULL AND so.valor_num <= ers.nivel_max))
+              AND (ers.severidad_min_id IS NULL OR so.severidad_id >= ers.severidad_min_id)
+              AND (ers.secuencia_min IS NULL OR so.secuencia >= ers.secuencia_min)
+              AND (ers.secuencia_max IS NULL OR so.secuencia <= ers.secuencia_max)
+              THEN 1 ELSE 0 END
+         ) AS coincidencias,
+      /* detalle en JSON: lista simple de síntomas involucrados */
+      JSON_ARRAYAGG(soc.nombre) AS detalles_json
+  FROM v_reglas_vigentes ers
+  LEFT JOIN sintoma_observado so
+    ON so.consulta_id = p_consulta_id
+   AND so.sintoma_id = ers.sintoma_id
+  LEFT JOIN sintoma_catalogo soc ON soc.id = ers.sintoma_id
+  GROUP BY ers.enfermedad_id;
+
+  /* Actualizar total_enfermedades */
+  UPDATE diagnostico_sugerido
+  SET total_enfermedades = (SELECT COUNT(*) FROM diagnostico_sugerido_item WHERE diagnostico_sugerido_id = v_diag_sug_id)
+  WHERE id = v_diag_sug_id;
+
+  /* Retornar resultados */
+  SELECT dsi.enfermedad_id,
+         enf.nombre AS enfermedad,
+         dsi.score,
+         dsi.coincidencias,
+         dsi.detalles_json
+  FROM diagnostico_sugerido_item dsi
+  JOIN enfermedad_catalogo enf ON enf.id = dsi.enfermedad_id
+  WHERE dsi.diagnostico_sugerido_id = v_diag_sug_id
+  ORDER BY dsi.score DESC;
+END$$
+
+
+/* ---------------------------------------------------------
+   SP: sp_registrar_diagnostico
+   Registra diagnóstico confirmado por el médico.
+   p_sugerido = 1 si proviene de análisis del sistema.
+--------------------------------------------------------- */
+DROP PROCEDURE IF EXISTS sp_registrar_diagnostico$$
+CREATE PROCEDURE sp_registrar_diagnostico(
+    IN p_consulta_id INT,
+    IN p_enfermedad_id INT,
+    IN p_sugerido TINYINT,
+    IN p_observaciones TEXT
+)
+BEGIN
+  INSERT INTO diagnostico (consulta_id, enfermedad_id, observaciones, sugerido_por_sistema)
+  VALUES (p_consulta_id, p_enfermedad_id, p_observaciones, p_sugerido);
+  SELECT LAST_INSERT_ID() AS diagnostico_id;
+END$$
+
+
+/* ---------------------------------------------------------
+   SP: sp_evaluar_diagnostico
+   Marca si el diagnóstico fue correcto o no (aprendizaje).
+--------------------------------------------------------- */
+DROP PROCEDURE IF EXISTS sp_evaluar_diagnostico$$
+CREATE PROCEDURE sp_evaluar_diagnostico(
+    IN p_diagnostico_id INT,
+    IN p_fue_correcto   TINYINT,
+    IN p_comentario     TEXT,
+    IN p_fecha_eval     DATE
+)
+BEGIN
+  INSERT INTO evaluacion_diagnostico (diagnostico_id, fue_correcto, comentario, fecha_evaluacion)
+  VALUES (p_diagnostico_id, p_fue_correcto, p_comentario, p_fecha_eval);
+END$$
+
+
+/* ---------------------------------------------------------
+   SP: sp_reporte_precision
+   Reporte agregado: conteos y % precisión por enfermedad en rango de fechas.
+   Nota: considera fecha_diagnostico en diagnostico.
+--------------------------------------------------------- */
+DROP PROCEDURE IF EXISTS sp_reporte_precision$$
+CREATE PROCEDURE sp_reporte_precision(
+    IN p_desde DATE,
+    IN p_hasta DATE
+)
+BEGIN
+  /* Normalizar nulos: si usuario pasa NULL, usar rango amplio */
+  IF p_desde IS NULL THEN SET p_desde = '1900-01-01'; END IF;
+  IF p_hasta IS NULL THEN SET p_hasta = '2999-12-31'; END IF;
+
+  SELECT
+    enf.id AS enfermedad_id,
+    enf.nombre AS enfermedad,
+    -- sugerencias: número de veces que la enfermedad apareció en items sugeridos dentro de consultas del rango
+    COALESCE(sug.cnt_sug,0) AS sugerencias,
+    -- confirmadas: diagnósticos del médico
+    COALESCE(conf.cnt_conf,0) AS confirmadas,
+    -- correctas: diagnósticos confirmados que fueron marcados como correctos
+    COALESCE(cor.cnt_corr,0) AS correctas,
+    CASE
+      WHEN COALESCE(conf.cnt_conf,0) = 0 THEN NULL
+      ELSE ROUND((COALESCE(cor.cnt_corr,0) / conf.cnt_conf) * 100,2)
+    END AS precision_pct
+  FROM enfermedad_catalogo enf
+  LEFT JOIN (
+      SELECT dsi.enfermedad_id, COUNT(*) AS cnt_sug
+      FROM diagnostico_sugerido_item dsi
+      JOIN diagnostico_sugerido ds ON ds.id = dsi.diagnostico_sugerido_id
+      JOIN consulta c ON c.id = ds.consulta_id
+      WHERE c.consulta_ts BETWEEN p_desde AND DATE_ADD(p_hasta, INTERVAL 1 DAY)
+      GROUP BY dsi.enfermedad_id
+  ) sug ON sug.enfermedad_id = enf.id
+  LEFT JOIN (
+      SELECT d.enfermedad_id, COUNT(*) AS cnt_conf
+      FROM diagnostico d
+      JOIN consulta c ON c.id = d.consulta_id
+      WHERE c.consulta_ts BETWEEN p_desde AND DATE_ADD(p_hasta, INTERVAL 1 DAY)
+      GROUP BY d.enfermedad_id
+  ) conf ON conf.enfermedad_id = enf.id
+  LEFT JOIN (
+      SELECT d.enfermedad_id, COUNT(*) AS cnt_corr
+      FROM diagnostico d
+      JOIN evaluacion_diagnostico ed ON ed.diagnostico_id = d.id
+      JOIN consulta c ON c.id = d.consulta_id
+      WHERE ed.fue_correcto = 1
+        AND c.consulta_ts BETWEEN p_desde AND DATE_ADD(p_hasta, INTERVAL 1 DAY)
+      GROUP BY d.enfermedad_id
+  ) cor ON cor.enfermedad_id = enf.id
+  ORDER BY enfermedad;
+END$$
+
+DELIMITER ;

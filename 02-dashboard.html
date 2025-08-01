@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard | Sistema Médico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <h1>Sistema Médico</h1>
+  <nav>
+    <a href="02-dashboard.html" class="active">Inicio</a>
+    <a href="03-pacientes-list.html">Pacientes</a>
+    <a href="10-configuracion-reglas.html">Reglas</a>
+    <a href="12-reporte-precision.html">Reportes</a>
+    <a href="logout.php">Salir</a>
+  </nav>
+</header>
+<main>
+
+  <h2>Panel</h2>
+  <div class="card">
+    <h3>Accesos rápidos</h3>
+    <div class="flex">
+      <a class="btn btn-primary" href="03-pacientes-list.html">Buscar Paciente</a>
+      <a class="btn btn-success" href="04-paciente-form.html">Nuevo Paciente</a>
+      <a class="btn btn-warning" href="12-reporte-precision.html">Ver Reportes</a>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Alertas recientes</h3>
+    <ul>
+      <li>Pacientes con fiebre alta sin diagnóstico confirmado.</li>
+      <li>Reglas clínicas con vigencia próxima a vencer.</li>
+    </ul>
+  </div>
+
+</main>
+</body>
+</html>

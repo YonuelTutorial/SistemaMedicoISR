@@ -1,0 +1,109 @@
+/* === styles.css (base) === */
+:root {
+  --primary:#0069d9; --primary-dark:#0053ad; --danger:#dc3545; --success:#28a745; --warning:#ffc107;
+  --gray-100:#f8f9fa; --gray-300:#dee2e6; --gray-600:#6c757d; --gray-900:#212529;
+  --radius:8px; --pad:0.75rem; --pad-sm:0.5rem; --pad-lg:1.25rem; --fs-sm:0.85rem; --fs-lg:1.25rem; --maxw:1200px;
+  font-family:system-ui,Segoe UI,Roboto,sans-serif;
+}
+html{box-sizing:border-box;}*,*::before,*::after{box-sizing:inherit;}
+body{
+  margin:0;padding:0;
+  font-family:system-ui,Segoe UI,Roboto,sans-serif;
+  line-height:1.4;color:var(--gray-900);background:var(--gray-100);
+}
+a{text-decoration:none;color:var(--primary);}a:hover{text-decoration:underline;}
+header{background:var(--primary);color:#fff;padding:var(--pad);}header h1{margin:0;font-size:1.1rem;}
+nav{margin-top:var(--pad-sm);}nav a{color:#fff;margin-right:1rem;font-size:var(--fs-sm);}nav a.active{text-decoration:underline;font-weight:bold;}
+main{max-width:var(--maxw);margin:0 auto;padding:var(--pad-lg);}
+.card{background:#fff;border:1px solid var(--gray-300);border-radius:var(--radius);padding:var(--pad-lg);margin-bottom:1.5rem;}
+.table{width:100%;border-collapse:collapse;font-size:var(--fs-sm);}
+.table th,.table td{border:1px solid var(--gray-300);padding:var(--pad-sm);text-align:left;}
+.table th{background:var(--gray-300);}
+.form-grid{display:grid;gap:var(--pad-sm);grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:start;}
+.form-grid label{font-weight:600;font-size:var(--fs-sm);display:block;}
+.form-grid input[type=text],.form-grid input[type=number],.form-grid input[type=date],.form-grid input[type=datetime-local],.form-grid input[type=password],.form-grid select,.form-grid textarea{
+  width:100%;padding:var(--pad-sm);border:1px solid var(--gray-300);border-radius:var(--radius);font-size:var(--fs-sm);
+}
+.btn{display:inline-block;padding:0.5rem 1rem;border-radius:var(--radius);border:none;cursor:pointer;font-size:var(--fs-sm);}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-success{background:var(--success);color:#fff;}
+.btn-warning{background:var(--warning);color:#000;}
+.badge{display:inline-block;padding:0.1rem 0.4rem;font-size:0.75em;border-radius:var(--radius);background:var(--gray-300);}
+.flex{display:flex;gap:var(--pad-sm);align-items:center;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.text-right{text-align:right;}
+.text-center{text-align:center;}
+.mt{margin-top:1rem;}.mb{margin-bottom:1rem;}
+.filter-bar{margin-bottom:var(--pad);}
+.alert{padding:var(--pad);border-radius:var(--radius);margin-bottom:var(--pad);font-size:var(--fs-sm);}
+.alert-info{background:#d1ecf1;color:#0c5460;}
+.alert-success{background:#d4edda;color:#155724;}
+.alert-warning{background:#fff3cd;color:#856404;}
+.alert-danger{background:#f8d7da;color:#721c24;}
+.tag-list{display:flex;flex-wrap:wrap;gap:var(--pad-sm);}
+.tag{background:var(--primary-dark);color:#fff;padding:0.25rem 0.5rem;border-radius:var(--radius);font-size:var(--fs-sm);}
+.small{font-size:var(--fs-sm);color:var(--gray-600);}
+code{background:var(--gray-300);padding:0 0.25rem;border-radius:4px;}
+.table-wrapper{overflow-x:auto;}
+.full-row{grid-column:1/-1;}
+
+
+/* === styles1.css (personalizado) === */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 960px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+h1, h2 {
+    color: #004085;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 5px;
+}
+
+.patient-info, .symptoms-logged, .suggested-diagnosis {
+    margin-bottom: 30px;
+}
+
+.patient-info p, .symptoms-logged ul {
+    margin-left: 20px;
+}
+
+.symptoms-logged ul {
+    list-style-type: disc;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+table th, table td {
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    text-align: left;
+}
+
+table th {
+    background-color: #e2e6ea;
+}
+
+table tr:nth-child(even) {
+    background-color: #f1f1f1;
+}
+

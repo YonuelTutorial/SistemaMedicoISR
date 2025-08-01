@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Historial de Síntomas por Paciente | Sistema Médico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <h1>Sistema Médico</h1>
+  <nav>
+    <a href="02-dashboard.html">Inicio</a>
+    <a href="03-pacientes-list.html">Pacientes</a>
+    <a href="10-configuracion-reglas.html">Reglas</a>
+    <a href="12-reporte-precision.html" class="active">Reportes</a>
+    <a href="logout.php">Salir</a>
+  </nav>
+</header>
+<main>
+
+  <div class="card">
+    <h3>Filtro</h3>
+    <form method="get" action="13-reporte-historial-sintomas.html" class="form-grid">
+      <label>Paciente<select name="paciente_id"><option value="">--Seleccione--</option></select></label>
+      <label>Síntoma<select name="sintoma_id"><option value="">Todos</option></select></label>
+      <label>Desde<input type="date" name="desde"></label>
+      <label>Hasta<input type="date" name="hasta"></label>
+      <div class="mt text-right full-row">
+        <button class="btn btn-primary" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Resultado</h3>
+    <div class="table-wrapper">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Síntoma</th><th>Nivel</th><th>Frecuencia</th><th>Duración</th><th>Secuencia</th></tr></thead>
+        <tbody>
+          <tr><td>2025-07-20</td><td>Fiebre</td><td>38.5°C</td><td>3</td><td>2d</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

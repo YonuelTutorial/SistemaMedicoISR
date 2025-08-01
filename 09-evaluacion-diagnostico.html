@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Evaluación de Diagnóstico | Sistema Médico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <h1>Sistema Médico</h1>
+  <nav>
+    <a href="02-dashboard.html">Inicio</a>
+    <a href="03-pacientes-list.html">Pacientes</a>
+    <a href="10-configuracion-reglas.html">Reglas</a>
+    <a href="12-reporte-precision.html" class="active">Reportes</a>
+    <a href="logout.php">Salir</a>
+  </nav>
+</header>
+<main>
+
+  <div class="card">
+    <p class="small">Consulta #{{consulta_id}} | Paciente: {{paciente_nombre}}</p>
+    <h3>Evaluación de Diagnóstico</h3>
+    <form method="post" action="evaluacion_save.php" class="form-grid">
+      <input type="hidden" name="diagnostico_id" value="{{diagnostico_id}}">
+      <label>¿Fue Correcto?
+        <select name="fue_correcto" required>
+          <option value="1">Sí</option>
+          <option value="0">No</option>
+        </select>
+      </label>
+      <label class="full-row">Comentario<textarea name="comentario" rows="3"></textarea></label>
+      <label>Fecha Evaluación<input type="date" name="fecha_evaluacion" required></label>
+      <div class="mt text-right full-row">
+        <button class="btn btn-primary" type="submit">Guardar Evaluación</button>
+      </div>
+    </form>
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Registro de Síntomas | Sistema Médico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <h1>Sistema Médico</h1>
+  <nav>
+    <a href="02-dashboard.html">Inicio</a>
+    <a href="03-pacientes-list.html" class="active">Pacientes</a>
+    <a href="10-configuracion-reglas.html">Reglas</a>
+    <a href="12-reporte-precision.html">Reportes</a>
+    <a href="logout.php">Salir</a>
+  </nav>
+</header>
+<main>
+
+  <div class="card">
+    <h3>Agregar Síntoma</h3>
+    <form method="post" action="sintoma_add.php" class="form-grid">
+      <input type="hidden" name="consulta_id" value="{{consulta_id}}">
+      <label>Síntoma<select name="sintoma_id" required><option value="">--Seleccione--</option><option value="1">Fiebre</option><option value="2">Tos</option></select></label>
+      <label>Nivel / Valor<input type="text" name="nivel" placeholder="38.5°C o Moderado"></label>
+      <label>Unidad<select name="unidad_id"><option value="C">°C</option><option value="F">°F</option><option value="escala">Escala</option></select></label>
+      <label>Frecuencia (veces)<input type="number" name="frecuencia" min="0"></label>
+      <label>Cantidad / Duración<input type="number" name="cantidad" min="0" placeholder="días"></label>
+      <label>Secuencia (orden)<input type="number" name="secuencia" min="1"></label>
+      <label>Fecha/Hora Observación<input type="datetime-local" name="observacion_ts" required></label>
+      <div class="mt text-right full-row"><button class="btn btn-primary" type="submit">Agregar</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Síntomas Registrados</h3>
+    <div class="table-wrapper">
+      <table class="table">
+        <thead><tr><th>Secuencia</th><th>Síntoma</th><th>Nivel</th><th>Freq</th><th>Duración</th><th>Fecha</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Fiebre</td><td>38.5°C</td><td>3</td><td>2d</td><td>2025-07-20 09:00</td><td><a href="#">Editar</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mt text-right"><a class="btn btn-success" href="07-diagnostico-sugerido.html?consulta={{consulta_id}}">Analizar</a></div>
+  </div>
+
+</main>
+</body>
+</html>
